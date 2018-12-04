@@ -28,8 +28,11 @@ repositories {
     maven { url 'https://maven.google.com' }
 }
 
+def DEFAULT_APPCOMPAT_VERSION = "+"
+
 dependencies {
+    def appcompatVersion = project.hasProperty('appcompatVersion') ? project.appcompatVersion : DEFAULT_APPCOMPAT_VERSION
     compile 'com.facebook.react:react-native:+'
-    compile 'com.android.support:appcompat-v7:27.0.2'
+    compile "com.android.support:appcompat-v7:$appcompatVersion"
     compile 'com.estimote:proximity-sdk:1.0.2'
 }
