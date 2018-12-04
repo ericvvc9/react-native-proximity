@@ -1,10 +1,17 @@
 package com.estimote.react;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.estimote.proximity_sdk.api.EstimoteCloudCredentials;
@@ -14,6 +21,7 @@ import com.estimote.proximity_sdk.api.ProximityZone;
 import com.estimote.proximity_sdk.api.ProximityZoneBuilder;
 import com.estimote.proximity_sdk.api.ProximityZoneContext;
 
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -37,14 +45,26 @@ public class RNEstimoteProximityModule extends ReactContextBaseJavaModule {
 
     private static final String TAG = "RNEstimoteProximity";
 
+    public static final String ACTION_CANCEL_PROXIMITY = "com.estimote.react.ACTION_CANCEL_PROXIMITY";
+
     private final ReactApplicationContext reactContext;
 
     private ProximityObserver observer;
     private ProximityObserver.Handler observationHandler;
 
+    private LocalBroadcastManager localBroadcastManager;
+    private BroadcastReceiver cancelProximityReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            stopObservingZones();
+        }
+    };
+
     public RNEstimoteProximityModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
+        this.localBroadcastManager = LocalBroadcastManager.getInstance(reactContext);
+        this.localBroadcastManager.registerReceiver(cancelProximityReceiver, new IntentFilter(ACTION_CANCEL_PROXIMITY));
     }
 
     @Override
@@ -178,6 +198,9 @@ public class RNEstimoteProximityModule extends ReactContextBaseJavaModule {
         if (observationHandler != null) {
             observationHandler.stop();
         }
+        try {
+            this.localBroadcastManager.unregisterReceiver(cancelProximityReceiver);
+        } catch (Throwable t) {}
     }
 
     // serialization helpers
@@ -226,11 +249,15 @@ public class RNEstimoteProximityModule extends ReactContextBaseJavaModule {
             iconRes = reactContext.getResources().getIdentifier("ic_launcher", "mipmap", reactContext.getPackageName());
         }
 
+        PendingIntent cancelIntent = PendingIntent.getBroadcast(reactContext, 0, new Intent(reactContext, NotificationCancelListener.class), 0);
+        NotificationCompat.Action cancelAction = new NotificationCompat.Action.Builder(R.drawable.ic_cancel_grey_24dp, reactContext.getString(R.string.cancel_proximity_title), cancelIntent).build();
+
         return new NotificationCompat.Builder(reactContext, channelId)
                 .setSmallIcon(iconRes)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                .addAction(cancelAction)
                 .build();
     }
 
