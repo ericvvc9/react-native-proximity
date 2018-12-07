@@ -125,6 +125,11 @@ public class RNEstimoteProximityModule extends ReactContextBaseJavaModule {
 
         observer = builder.build();
     }
+    
+    @ReactMethod
+    public void isObserverHandlerAlive(Promise promise) {
+        promise.resolve(observationHandler != null);
+    }
 
     @ReactMethod
     public void startObservingZones(ReadableArray zonesJSON) {
