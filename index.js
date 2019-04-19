@@ -128,10 +128,16 @@ export const proximityObserver = {
 
   stopObservingZones() {
     RNEstimoteProximity.stopObservingZones();
-
-    this.onEnterSubscription.remove();
-    this.onExitSubscription.remove();
-    this.onChangeSubscription.remove();
+    if( this.onEnterSubscription ){
+      this.onEnterSubscription.remove();
+    }
+    if( this.onExitSubscription ) {
+      this.onExitSubscription.remove();
+    }
+    if(this.onChangeSubscription) {
+      this.onChangeSubscription.remove();
+    }
+    
   }
 };
 
